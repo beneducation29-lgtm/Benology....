@@ -62,6 +62,36 @@ const QUICK_SAMPLES: SamplePreset[] = [
     translatedText:
       '您好，我预订了三晚的双人间。请问从酒店坐地铁去中心银行需要多长时间？',
   },
+  {
+    id: 'zh_daily_1',
+    label: 'Mẫu Trung – Việt: Gọi món ở nhà hàng',
+    sourceLang: 'vi',
+    targetLang: 'zh',
+    sourceText:
+      'Cho tôi một bát mì bò, ít cay thôi. Ngoài ra, cho tôi thêm một cốc trà nóng. Có thể thanh toán bằng thẻ không?',
+    translatedText:
+      '请给我一碗牛肉面，少放一点辣椒。另外，请再给我一杯热茶。可以刷卡付款吗？',
+  },
+  {
+    id: 'zh_work_1',
+    label: 'Mẫu Trung – Việt: Trao đổi công việc',
+    sourceLang: 'zh',
+    targetLang: 'vi',
+    sourceText:
+      '我们已经收到您发来的文件。请您再确认一下交付日期，如果有任何问题，请及时告诉我们。',
+    translatedText:
+      'Chúng tôi đã nhận được tài liệu bạn gửi. Vui lòng xác nhận lại ngày bàn giao; nếu có bất kỳ vấn đề nào, hãy thông báo cho chúng tôi kịp thời.',
+  },
+  {
+    id: 'en_daily_1',
+    label: 'Mẫu Anh – Việt: Giao tiếp hằng ngày',
+    sourceLang: 'en',
+    targetLang: 'vi',
+    sourceText:
+      'I am trying to build a better routine. I usually review new words in the morning and listen to a short podcast on my way to work.',
+    translatedText:
+      'Tôi đang cố gắng xây dựng một thói quen tốt hơn. Tôi thường ôn từ mới vào buổi sáng và nghe một podcast ngắn trên đường đi làm.',
+  },
 ];
 
 function detectLocalLang(text: string): LanguageCode | null {
