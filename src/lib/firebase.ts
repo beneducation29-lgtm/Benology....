@@ -3,6 +3,7 @@ import {
   getAuth,
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithRedirect,
   signOut,
 } from 'firebase/auth';
 import { doc, getDocFromServer, getFirestore } from 'firebase/firestore';
@@ -80,7 +81,23 @@ async function testConnection() {
 void testConnection();
 
 export async function signInWithGoogle() {
-  return signInWithPopup(auth, googleProvider);
+  try {
+    return await signInWithPopup(auth, googleProvider);
+  } catch (error) {
+    const code =
+      typeof error === 'object' && error !== null && 'code' in error
+        ? String((error as { code?: unknown }).code)
+        : '';
+
+    // Popup blockers are common in browsers with strict privacy settings.
+    // Retry through the full-page redirect flow instead of failing silently.
+    if (code === 'auth/popup-blocked') {
+      await signInWithRedirect(auth, googleProvider);
+      return null;
+    }
+
+    throw error;
+  }
 }
 
 export async function signOutUser() {

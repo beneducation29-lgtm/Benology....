@@ -1,12 +1,51 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { getRedirectResult } from 'firebase/auth';
+import { auth } from '../lib/firebase';
 import { BookOpen, Layers, Mic, Repeat, LogIn, AlertCircle } from 'lucide-react';
 import { signInWithGoogle } from '../lib/firebase';
 import heroWorkspaceImg from '../assets/images/hero_language_workspace_1793681139557.jpg';
+
+function getGoogleSignInMessage(code: string): string {
+  switch (code) {
+    case 'auth/unauthorized-domain':
+      return 'Tên miền của ứng dụng chưa được cho phép trong Firebase Authentication. Quản trị viên cần thêm tên miền hiện tại vào mục Authorized domains.';
+    case 'auth/operation-not-allowed':
+      return 'Đăng nhập Google chưa được bật trong Firebase Authentication. Quản trị viên cần bật nhà cung cấp Google.';
+    case 'auth/popup-blocked':
+      return 'Trình duyệt đang chặn cửa sổ đăng nhập Google. Hãy cho phép pop-up và thử lại.';
+    case 'auth/network-request-failed':
+      return 'Không thể kết nối Google/Firebase. Hãy kiểm tra mạng, VPN hoặc tiện ích chặn quảng cáo rồi thử lại.';
+    case 'auth/web-storage-unsupported':
+      return 'Trình duyệt đang chặn bộ nhớ cần thiết cho đăng nhập. Hãy bật cookie và site data cho trang này.';
+    case 'auth/too-many-requests':
+      return 'Google/Firebase tạm thời giới hạn yêu cầu đăng nhập. Vui lòng đợi một lúc rồi thử lại.';
+    default:
+      return code
+        ? `Đăng nhập Google chưa thành công (mã: ${code}). Vui lòng thử lại hoặc gửi mã lỗi này để được hỗ trợ.`
+        : 'Đăng nhập chưa hoàn tất. Vui lòng thử lại và kiểm tra cài đặt cửa sổ đăng nhập Google.';
+  }
+}
 
 export function AuthLanding() {
   const [signingIn, setSigningIn] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [imgFailed, setImgFailed] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    getRedirectResult(auth).catch((err: unknown) => {
+      if (!active) return;
+      const code =
+        typeof err === 'object' && err !== null && 'code' in err
+          ? String((err as { code?: unknown }).code)
+          : '';
+      console.error('Google redirect sign-in failed:', code || err);
+      setError(getGoogleSignInMessage(code));
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const handleLogin = async () => {
     setSigningIn(true);
@@ -14,9 +53,13 @@ export function AuthLanding() {
     try {
       await signInWithGoogle();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Không thể đăng nhập lúc này.';
-      if (!msg.includes('popup-closed-by-user')) {
-        setError('Đăng nhập chưa hoàn tất. Vui lòng thử lại và cho phép cửa sổ đăng nhập Google.');
+      const code =
+        typeof err === 'object' && err !== null && 'code' in err
+          ? String((err as { code?: unknown }).code)
+          : '';
+      console.error('Google sign-in failed:', code || err);
+      if (code !== 'auth/popup-closed-by-user' && code !== 'auth/cancelled-popup-request') {
+        setError(getGoogleSignInMessage(code));
       }
     } finally {
       setSigningIn(false);
