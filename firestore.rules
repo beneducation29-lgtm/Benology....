@@ -1,0 +1,458 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Pillar 4.1: Global Safety Net (Default-Deny Catch-All)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global Hardened Primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function userExists(uid) {
+      return exists(/databases/$(database)/documents/users/$(uid)) ||
+             existsAfter(/databases/$(database)/documents/users/$(uid));
+    }
+
+    function flashcardExists(fcId) {
+      return exists(/databases/$(database)/documents/flashcards/$(fcId)) ||
+             existsAfter(/databases/$(database)/documents/flashcards/$(fcId));
+    }
+
+    // Validation Blueprint 1: User (/users/{userId})
+    function isValidUser(data) {
+      return data.keys().hasAll([
+        'uid', 'displayName', 'primaryLearningLang', 'chineseScript',
+        'preferredVoiceEngine', 'preferredVoiceURI', 'speechRate',
+        'dailyGoalMinutes', 'dailyNewCardsGoal', 'streakDays',
+        'lastStudyDate', 'studyLog', 'createdAt', 'updatedAt'
+      ]) &&
+      data.keys().hasOnly([
+        'uid', 'displayName', 'primaryLearningLang', 'chineseScript',
+        'preferredVoiceEngine', 'preferredVoiceURI', 'speechRate',
+        'dailyGoalMinutes', 'dailyNewCardsGoal', 'streakDays',
+        'lastStudyDate', 'studyLog', 'createdAt', 'updatedAt'
+      ]) &&
+      data.uid is string && data.uid == request.auth.uid && isValidId(data.uid) &&
+      data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 100 &&
+      data.primaryLearningLang is string && data.primaryLearningLang.size() <= 10 &&
+      data.primaryLearningLang in ['en', 'zh'] &&
+      data.chineseScript is string && data.chineseScript.size() <= 20 &&
+      data.chineseScript in ['simplified', 'traditional', 'both'] &&
+      data.preferredVoiceEngine is string && data.preferredVoiceEngine.size() <= 20 &&
+      data.preferredVoiceEngine in ['browser', 'gemini'] &&
+      data.preferredVoiceURI is string && data.preferredVoiceURI.size() <= 200 &&
+      data.speechRate is number && data.speechRate >= 0.5 && data.speechRate <= 1.8 &&
+      data.dailyGoalMinutes is number && data.dailyGoalMinutes >= 5 && data.dailyGoalMinutes <= 240 &&
+      data.dailyNewCardsGoal is number && data.dailyNewCardsGoal >= 5 && data.dailyNewCardsGoal <= 100 &&
+      data.streakDays is number && data.streakDays >= 0 && data.streakDays <= 36500 &&
+      data.lastStudyDate is string && data.lastStudyDate.size() <= 20 &&
+      data.studyLog is list && data.studyLog.size() <= 30 &&
+      (data.studyLog.size() == 0 || (data.studyLog[0] is string && data.studyLog[0].size() <= 50)) &&
+      data.createdAt is timestamp &&
+      data.updatedAt is timestamp;
+    }
+
+    // Validation Blueprint 2: TranslationEntry (/translationEntries/{entryId})
+    function isValidTranslationEntry(data) {
+      return data.keys().hasAll([
+        'userId', 'sourceText', 'translatedText', 'sourceLang', 'targetLang',
+        'dataSource', 'status', 'lessonId', 'errorMessage', 'createdAt', 'updatedAt'
+      ]) &&
+      data.keys().hasOnly([
+        'userId', 'sourceText', 'translatedText', 'sourceLang', 'targetLang',
+        'dataSource', 'status', 'lessonId', 'errorMessage', 'createdAt', 'updatedAt'
+      ]) &&
+      data.userId is string && data.userId == request.auth.uid && isValidId(data.userId) &&
+      data.sourceText is string && data.sourceText.size() >= 1 && data.sourceText.size() <= 5000 &&
+      data.translatedText is string && data.translatedText.size() >= 1 && data.translatedText.size() <= 5000 &&
+      data.sourceLang is string && data.sourceLang.size() <= 10 && data.sourceLang in ['vi', 'en', 'zh'] &&
+      data.targetLang is string && data.targetLang.size() <= 10 && data.targetLang in ['vi', 'en', 'zh'] &&
+      data.dataSource is string && data.dataSource.size() <= 30 &&
+      data.dataSource in ['manual_paste', 'share_intent', 'extension_bridge', 'quick_sample'] &&
+      data.status is string && data.status.size() <= 20 &&
+      data.status in ['pending', 'processed', 'failed'] &&
+      data.lessonId is string && data.lessonId.size() <= 128 &&
+      data.errorMessage is string && data.errorMessage.size() <= 500 &&
+      data.createdAt is timestamp &&
+      data.updatedAt is timestamp;
+    }
+
+    // Validation Blueprint 3: Lesson (/lessons/{lessonId})
+    function isValidLesson(data) {
+      return data.keys().hasAll([
+        'userId', 'title', 'topic', 'summary', 'sourceText', 'translatedText',
+        'sourceLang', 'targetLang', 'learningLang', 'vocabIds', 'sentences',
+        'grammarPoints', 'exercises', 'entryCount', 'masteryPercent',
+        'completedExercises', 'shadowingCount', 'isCompleted', 'createdAt', 'updatedAt'
+      ]) &&
+      data.keys().hasOnly([
+        'userId', 'title', 'topic', 'summary', 'sourceText', 'translatedText',
+        'sourceLang', 'targetLang', 'learningLang', 'vocabIds', 'sentences',
+        'grammarPoints', 'exercises', 'entryCount', 'masteryPercent',
+        'completedExercises', 'shadowingCount', 'isCompleted', 'createdAt', 'updatedAt'
+      ]) &&
+      data.userId is string && data.userId == request.auth.uid && isValidId(data.userId) &&
+      data.title is string && data.title.size() >= 1 && data.title.size() <= 200 &&
+      data.topic is string && data.topic.size() >= 1 && data.topic.size() <= 100 &&
+      data.summary is string && data.summary.size() <= 1500 &&
+      data.sourceText is string && data.sourceText.size() >= 1 && data.sourceText.size() <= 8000 &&
+      data.translatedText is string && data.translatedText.size() >= 1 && data.translatedText.size() <= 8000 &&
+      data.sourceLang is string && data.sourceLang.size() <= 10 && data.sourceLang in ['vi', 'en', 'zh'] &&
+      data.targetLang is string && data.targetLang.size() <= 10 && data.targetLang in ['vi', 'en', 'zh'] &&
+      data.learningLang is string && data.learningLang.size() <= 10 && data.learningLang in ['en', 'zh'] &&
+      data.vocabIds is list && data.vocabIds.size() <= 60 &&
+      (data.vocabIds.size() == 0 || (data.vocabIds[0] is string && data.vocabIds[0].size() <= 128)) &&
+      data.sentences is list && data.sentences.size() <= 40 &&
+      (data.sentences.size() == 0 || data.sentences[0] is map) &&
+      data.grammarPoints is list && data.grammarPoints.size() <= 20 &&
+      (data.grammarPoints.size() == 0 || data.grammarPoints[0] is map) &&
+      data.exercises is list && data.exercises.size() <= 20 &&
+      (data.exercises.size() == 0 || data.exercises[0] is map) &&
+      data.entryCount is number && data.entryCount >= 1 && data.entryCount <= 500 &&
+      data.masteryPercent is number && data.masteryPercent >= 0 && data.masteryPercent <= 100 &&
+      data.completedExercises is number && data.completedExercises >= 0 && data.completedExercises <= 500 &&
+      data.shadowingCount is number && data.shadowingCount >= 0 && data.shadowingCount <= 10000 &&
+      data.isCompleted is bool &&
+      data.createdAt is timestamp &&
+      data.updatedAt is timestamp;
+    }
+
+    // Validation Blueprint 4: Vocabulary (/vocabulary/{vocabId})
+    function isValidVocabulary(data) {
+      return data.keys().hasAll([
+        'userId', 'canonicalKey', 'learningLang', 'word', 'lemma', 'traditional',
+        'homonymSenseKey', 'pronunciation', 'partOfSpeech', 'meanings',
+        'lessonIds', 'encounterCount', 'flashcardId', 'createdAt', 'updatedAt'
+      ]) &&
+      data.keys().hasOnly([
+        'userId', 'canonicalKey', 'learningLang', 'word', 'lemma', 'traditional',
+        'homonymSenseKey', 'pronunciation', 'partOfSpeech', 'meanings',
+        'lessonIds', 'encounterCount', 'flashcardId', 'createdAt', 'updatedAt'
+      ]) &&
+      data.userId is string && data.userId == request.auth.uid && isValidId(data.userId) &&
+      data.canonicalKey is string && data.canonicalKey.size() >= 3 && data.canonicalKey.size() <= 200 &&
+      data.learningLang is string && data.learningLang.size() <= 10 && data.learningLang in ['en', 'zh'] &&
+      data.word is string && data.word.size() >= 1 && data.word.size() <= 150 &&
+      data.lemma is string && data.lemma.size() >= 1 && data.lemma.size() <= 150 &&
+      data.traditional is string && data.traditional.size() <= 150 &&
+      data.homonymSenseKey is string && data.homonymSenseKey.size() <= 100 &&
+      data.pronunciation is string && data.pronunciation.size() <= 200 &&
+      data.partOfSpeech is string && data.partOfSpeech.size() <= 80 &&
+      data.meanings is list && data.meanings.size() >= 1 && data.meanings.size() <= 15 &&
+      data.meanings[0] is string && data.meanings[0].size() <= 300 &&
+      data.lessonIds is list && data.lessonIds.size() <= 50 &&
+      (data.lessonIds.size() == 0 || (data.lessonIds[0] is string && data.lessonIds[0].size() <= 128)) &&
+      data.encounterCount is number && data.encounterCount >= 1 && data.encounterCount <= 100000 &&
+      data.flashcardId is string && isValidId(data.flashcardId) &&
+      data.createdAt is timestamp &&
+      data.updatedAt is timestamp;
+    }
+
+    // Validation Blueprint 5: Flashcard (/flashcards/{flashcardId})
+    function isValidFlashcard(data) {
+      return data.keys().hasAll([
+        'userId', 'canonicalKey', 'learningLang', 'word', 'lemma', 'traditional',
+        'homonymNote', 'ipa', 'pinyin', 'partOfSpeech', 'meanings', 'examples',
+        'relatedForms', 'contexts', 'isFavorite', 'encounterCount', 'lessonIds',
+        'createdAt', 'updatedAt'
+      ]) &&
+      data.keys().hasOnly([
+        'userId', 'canonicalKey', 'learningLang', 'word', 'lemma', 'traditional',
+        'homonymNote', 'ipa', 'pinyin', 'partOfSpeech', 'meanings', 'examples',
+        'relatedForms', 'contexts', 'isFavorite', 'encounterCount', 'lessonIds',
+        'createdAt', 'updatedAt'
+      ]) &&
+      data.userId is string && data.userId == request.auth.uid && isValidId(data.userId) &&
+      data.canonicalKey is string && data.canonicalKey.size() >= 3 && data.canonicalKey.size() <= 200 &&
+      data.learningLang is string && data.learningLang.size() <= 10 && data.learningLang in ['en', 'zh'] &&
+      data.word is string && data.word.size() >= 1 && data.word.size() <= 150 &&
+      data.lemma is string && data.lemma.size() >= 1 && data.lemma.size() <= 150 &&
+      data.traditional is string && data.traditional.size() <= 150 &&
+      data.homonymNote is string && data.homonymNote.size() <= 250 &&
+      data.ipa is string && data.ipa.size() <= 150 &&
+      data.pinyin is string && data.pinyin.size() <= 200 &&
+      data.partOfSpeech is string && data.partOfSpeech.size() <= 80 &&
+      data.meanings is list && data.meanings.size() >= 1 && data.meanings.size() <= 15 &&
+      data.meanings[0] is string && data.meanings[0].size() <= 300 &&
+      data.examples is list && data.examples.size() >= 1 && data.examples.size() <= 20 &&
+      data.examples[0] is map &&
+      data.relatedForms is list && data.relatedForms.size() <= 15 &&
+      (data.relatedForms.size() == 0 || (data.relatedForms[0] is string && data.relatedForms[0].size() <= 200)) &&
+      data.contexts is list && data.contexts.size() <= 20 &&
+      (data.contexts.size() == 0 || (data.contexts[0] is string && data.contexts[0].size() <= 120)) &&
+      data.isFavorite is bool &&
+      data.encounterCount is number && data.encounterCount >= 1 && data.encounterCount <= 100000 &&
+      data.lessonIds is list && data.lessonIds.size() <= 50 &&
+      (data.lessonIds.size() == 0 || (data.lessonIds[0] is string && data.lessonIds[0].size() <= 128)) &&
+      data.createdAt is timestamp &&
+      data.updatedAt is timestamp;
+    }
+
+    // Validation Blueprint 6: ReviewProgress (/reviewProgress/{progressId})
+    function isValidReviewProgress(data) {
+      return data.keys().hasAll([
+        'userId', 'flashcardId', 'learningLang', 'reviewState', 'lastRating',
+        'intervalDays', 'easeFactor', 'repetitions', 'lapses',
+        'nextReviewAtMs', 'lastReviewedAtMs', 'createdAt', 'updatedAt'
+      ]) &&
+      data.keys().hasOnly([
+        'userId', 'flashcardId', 'learningLang', 'reviewState', 'lastRating',
+        'intervalDays', 'easeFactor', 'repetitions', 'lapses',
+        'nextReviewAtMs', 'lastReviewedAtMs', 'createdAt', 'updatedAt'
+      ]) &&
+      data.userId is string && data.userId == request.auth.uid && isValidId(data.userId) &&
+      data.flashcardId is string && isValidId(data.flashcardId) &&
+      data.learningLang is string && data.learningLang.size() <= 10 && data.learningLang in ['en', 'zh'] &&
+      data.reviewState is string && data.reviewState.size() <= 20 &&
+      data.reviewState in ['unlearned', 'learning', 'remembered', 'needs_review'] &&
+      data.lastRating is string && data.lastRating.size() <= 20 &&
+      data.lastRating in ['none', 'forgot', 'hard', 'good', 'easy'] &&
+      data.intervalDays is number && data.intervalDays >= 0 && data.intervalDays <= 3650 &&
+      data.easeFactor is number && data.easeFactor >= 1.3 && data.easeFactor <= 4.0 &&
+      data.repetitions is number && data.repetitions >= 0 && data.repetitions <= 100000 &&
+      data.lapses is number && data.lapses >= 0 && data.lapses <= 100000 &&
+      data.nextReviewAtMs is number && data.nextReviewAtMs >= 0 &&
+      data.lastReviewedAtMs is number && data.lastReviewedAtMs >= 0 &&
+      data.createdAt is timestamp &&
+      data.updatedAt is timestamp;
+    }
+
+    // 1. Users Collection
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow list: if false;
+
+      allow create: if isVerified() &&
+                    isOwner(userId) &&
+                    isValidId(userId) &&
+                    isValidUser(incoming()) &&
+                    incoming().uid == userId &&
+                    incoming().createdAt == request.time &&
+                    incoming().updatedAt == request.time;
+
+      allow update: if isVerified() &&
+                    isOwner(userId) &&
+                    isValidId(userId) &&
+                    isValidUser(incoming()) &&
+                    existing().uid == userId &&
+                    incoming().uid == existing().uid &&
+                    incoming().createdAt == existing().createdAt &&
+                    incoming().updatedAt == request.time && (
+                      // Action 1: Update study preferences & settings
+                      incoming().diff(existing()).affectedKeys().hasOnly([
+                        'displayName', 'primaryLearningLang', 'chineseScript',
+                        'preferredVoiceEngine', 'preferredVoiceURI', 'speechRate',
+                        'dailyGoalMinutes', 'dailyNewCardsGoal', 'updatedAt'
+                      ]) ||
+                      // Action 2: Record study streak and daily study log
+                      incoming().diff(existing()).affectedKeys().hasOnly([
+                        'streakDays', 'lastStudyDate', 'studyLog', 'updatedAt'
+                      ])
+                    );
+
+      allow delete: if false;
+    }
+
+    // 2. TranslationEntries Collection
+    match /translationEntries/{entryId} {
+      allow get: if isVerified() && isValidId(entryId) && existing().userId == request.auth.uid;
+      allow list: if isVerified() && resource.data.userId == request.auth.uid;
+
+      allow create: if isVerified() &&
+                    isValidId(entryId) &&
+                    isValidTranslationEntry(incoming()) &&
+                    incoming().createdAt == request.time &&
+                    incoming().updatedAt == request.time &&
+                    userExists(request.auth.uid);
+
+      allow update: if isVerified() &&
+                    isValidId(entryId) &&
+                    isValidTranslationEntry(incoming()) &&
+                    existing().userId == request.auth.uid &&
+                    incoming().userId == existing().userId &&
+                    incoming().createdAt == existing().createdAt &&
+                    incoming().updatedAt == request.time &&
+                    // Terminal State Locking: processed entries cannot be mutated
+                    existing().status != 'processed' && (
+                      // Action 1: Mark entry processed or failed after AI lesson generation
+                      incoming().diff(existing()).affectedKeys().hasOnly([
+                        'status', 'lessonId', 'errorMessage', 'updatedAt'
+                      ])
+                    );
+
+      allow delete: if isVerified() && isValidId(entryId) && existing().userId == request.auth.uid;
+    }
+
+    // 3. Lessons Collection
+    match /lessons/{lessonId} {
+      allow get: if isVerified() && isValidId(lessonId) && existing().userId == request.auth.uid;
+      allow list: if isVerified() && resource.data.userId == request.auth.uid;
+
+      allow create: if isVerified() &&
+                    isValidId(lessonId) &&
+                    isValidLesson(incoming()) &&
+                    incoming().createdAt == request.time &&
+                    incoming().updatedAt == request.time &&
+                    userExists(request.auth.uid);
+
+      allow update: if isVerified() &&
+                    isValidId(lessonId) &&
+                    isValidLesson(incoming()) &&
+                    existing().userId == request.auth.uid &&
+                    incoming().userId == existing().userId &&
+                    incoming().learningLang == existing().learningLang &&
+                    incoming().createdAt == existing().createdAt &&
+                    incoming().updatedAt == request.time && (
+                      // Action 1: Enrich existing related-topic lesson with new translation content
+                      incoming().diff(existing()).affectedKeys().hasOnly([
+                        'sourceText', 'translatedText', 'summary', 'vocabIds',
+                        'sentences', 'grammarPoints', 'exercises', 'entryCount',
+                        'masteryPercent', 'completedExercises', 'isCompleted', 'updatedAt'
+                      ]) ||
+                      // Action 2: Update learner exercise & shadowing progress
+                      incoming().diff(existing()).affectedKeys().hasOnly([
+                        'masteryPercent', 'completedExercises', 'shadowingCount',
+                        'isCompleted', 'updatedAt'
+                      ]) ||
+                      // Action 3: Rename lesson title or topic
+                      incoming().diff(existing()).affectedKeys().hasOnly([
+                        'title', 'topic', 'updatedAt'
+                      ])
+                    );
+
+      allow delete: if isVerified() && isValidId(lessonId) && existing().userId == request.auth.uid;
+    }
+
+    // 4. Vocabulary Collection
+    match /vocabulary/{vocabId} {
+      allow get: if isVerified() && isValidId(vocabId) && existing().userId == request.auth.uid;
+      allow list: if isVerified() && resource.data.userId == request.auth.uid;
+
+      allow create: if isVerified() &&
+                    isValidId(vocabId) &&
+                    isValidVocabulary(incoming()) &&
+                    incoming().createdAt == request.time &&
+                    incoming().updatedAt == request.time &&
+                    userExists(request.auth.uid) &&
+                    flashcardExists(incoming().flashcardId);
+
+      allow update: if isVerified() &&
+                    isValidId(vocabId) &&
+                    isValidVocabulary(incoming()) &&
+                    existing().userId == request.auth.uid &&
+                    incoming().userId == existing().userId &&
+                    incoming().canonicalKey == existing().canonicalKey &&
+                    incoming().learningLang == existing().learningLang &&
+                    incoming().flashcardId == existing().flashcardId &&
+                    incoming().createdAt == existing().createdAt &&
+                    incoming().updatedAt == request.time && (
+                      // Action 1: Merge meanings/encounters when word appears again or card is edited
+                      incoming().diff(existing()).affectedKeys().hasOnly([
+                        'word', 'traditional', 'pronunciation', 'partOfSpeech',
+                        'meanings', 'lessonIds', 'encounterCount', 'updatedAt'
+                      ])
+                    );
+
+      allow delete: if isVerified() && isValidId(vocabId) && existing().userId == request.auth.uid;
+    }
+
+    // 5. Flashcards Collection
+    match /flashcards/{flashcardId} {
+      allow get: if isVerified() && isValidId(flashcardId) && existing().userId == request.auth.uid;
+      allow list: if isVerified() && resource.data.userId == request.auth.uid;
+
+      allow create: if isVerified() &&
+                    isValidId(flashcardId) &&
+                    isValidFlashcard(incoming()) &&
+                    incoming().createdAt == request.time &&
+                    incoming().updatedAt == request.time &&
+                    userExists(request.auth.uid);
+
+      allow update: if isVerified() &&
+                    isValidId(flashcardId) &&
+                    isValidFlashcard(incoming()) &&
+                    existing().userId == request.auth.uid &&
+                    incoming().userId == existing().userId &&
+                    incoming().canonicalKey == existing().canonicalKey &&
+                    incoming().learningLang == existing().learningLang &&
+                    incoming().createdAt == existing().createdAt &&
+                    incoming().updatedAt == request.time && (
+                      // Action 1: Toggle favorite bookmark
+                      incoming().diff(existing()).affectedKeys().hasOnly([
+                        'isFavorite', 'updatedAt'
+                      ]) ||
+                      // Action 2: Enrich card automatically on new translation encounter
+                      incoming().diff(existing()).affectedKeys().hasOnly([
+                        'word', 'traditional', 'homonymNote', 'ipa', 'pinyin',
+                        'partOfSpeech', 'meanings', 'examples', 'relatedForms',
+                        'contexts', 'encounterCount', 'lessonIds', 'updatedAt'
+                      ]) ||
+                      // Action 3: Manual user edit of flashcard fields
+                      incoming().diff(existing()).affectedKeys().hasOnly([
+                        'word', 'traditional', 'homonymNote', 'ipa', 'pinyin',
+                        'partOfSpeech', 'meanings', 'examples', 'relatedForms',
+                        'isFavorite', 'updatedAt'
+                      ])
+                    );
+
+      allow delete: if isVerified() && isValidId(flashcardId) && existing().userId == request.auth.uid;
+    }
+
+    // 6. ReviewProgress Collection
+    match /reviewProgress/{progressId} {
+      allow get: if isVerified() && isValidId(progressId) && existing().userId == request.auth.uid;
+      allow list: if isVerified() && resource.data.userId == request.auth.uid;
+
+      allow create: if isVerified() &&
+                    isValidId(progressId) &&
+                    isValidReviewProgress(incoming()) &&
+                    incoming().createdAt == request.time &&
+                    incoming().updatedAt == request.time &&
+                    userExists(request.auth.uid) &&
+                    flashcardExists(incoming().flashcardId);
+
+      allow update: if isVerified() &&
+                    isValidId(progressId) &&
+                    isValidReviewProgress(incoming()) &&
+                    existing().userId == request.auth.uid &&
+                    incoming().userId == existing().userId &&
+                    incoming().flashcardId == existing().flashcardId &&
+                    incoming().learningLang == existing().learningLang &&
+                    incoming().createdAt == existing().createdAt &&
+                    incoming().updatedAt == request.time && (
+                      // Action 1: Record spaced repetition review assessment
+                      incoming().diff(existing()).affectedKeys().hasOnly([
+                        'reviewState', 'lastRating', 'intervalDays', 'easeFactor',
+                        'repetitions', 'lapses', 'nextReviewAtMs', 'lastReviewedAtMs',
+                        'updatedAt'
+                      ])
+                    );
+
+      allow delete: if isVerified() && isValidId(progressId) && existing().userId == request.auth.uid;
+    }
+  }
+}

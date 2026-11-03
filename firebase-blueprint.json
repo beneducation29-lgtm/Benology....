@@ -1,0 +1,641 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User learning profile, preferences, goals, and study streak metadata without PII.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Authenticated Firebase user UID.",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Display name shown in learning dashboard.",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "primaryLearningLang": {
+          "type": "string",
+          "description": "Default target language for learning.",
+          "enum": ["en", "zh"],
+          "maxLength": 10
+        },
+        "chineseScript": {
+          "type": "string",
+          "description": "Preferred Chinese character variant.",
+          "enum": ["simplified", "traditional", "both"],
+          "maxLength": 20
+        },
+        "preferredVoiceEngine": {
+          "type": "string",
+          "description": "Preferred TTS engine for pronunciation and shadowing.",
+          "enum": ["browser", "gemini"],
+          "maxLength": 20
+        },
+        "preferredVoiceURI": {
+          "type": "string",
+          "description": "Preferred browser SpeechSynthesis voice URI.",
+          "maxLength": 200
+        },
+        "speechRate": {
+          "type": "number",
+          "description": "Default speech playback rate (0.5 to 1.8)."
+        },
+        "dailyGoalMinutes": {
+          "type": "number",
+          "description": "Daily study goal in minutes."
+        },
+        "dailyNewCardsGoal": {
+          "type": "number",
+          "description": "Daily flashcard review goal."
+        },
+        "streakDays": {
+          "type": "number",
+          "description": "Consecutive days studied."
+        },
+        "lastStudyDate": {
+          "type": "string",
+          "description": "Last local date studied in YYYY-MM-DD format.",
+          "maxLength": 20
+        },
+        "studyLog": {
+          "type": "array",
+          "description": "Bounded recent daily study summary strings (YYYY-MM-DD|minutes|reviews), max 30 entries."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp."
+        }
+      },
+      "required": [
+        "uid",
+        "displayName",
+        "primaryLearningLang",
+        "chineseScript",
+        "preferredVoiceEngine",
+        "preferredVoiceURI",
+        "speechRate",
+        "dailyGoalMinutes",
+        "dailyNewCardsGoal",
+        "streakDays",
+        "lastStudyDate",
+        "studyLog",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "TranslationEntry": {
+      "title": "TranslationEntry",
+      "description": "Raw translation entry imported manually, via mobile share, or browser extension.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Owner user UID.",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "sourceText": {
+          "type": "string",
+          "description": "Original source text verbatim.",
+          "minLength": 1,
+          "maxLength": 5000
+        },
+        "translatedText": {
+          "type": "string",
+          "description": "User-provided or Google Translate target text verbatim.",
+          "minLength": 1,
+          "maxLength": 5000
+        },
+        "sourceLang": {
+          "type": "string",
+          "description": "Source language code.",
+          "enum": ["vi", "en", "zh"],
+          "maxLength": 10
+        },
+        "targetLang": {
+          "type": "string",
+          "description": "Target language code.",
+          "enum": ["vi", "en", "zh"],
+          "maxLength": 10
+        },
+        "dataSource": {
+          "type": "string",
+          "description": "Origin of the translation entry.",
+          "enum": ["manual_paste", "share_intent", "extension_bridge", "quick_sample"],
+          "maxLength": 30
+        },
+        "status": {
+          "type": "string",
+          "description": "Processing lifecycle status.",
+          "enum": ["pending", "processed", "failed"],
+          "maxLength": 20
+        },
+        "lessonId": {
+          "type": "string",
+          "description": "ID of created or updated lesson once processed.",
+          "maxLength": 128
+        },
+        "errorMessage": {
+          "type": "string",
+          "description": "Error detail when processing fails.",
+          "maxLength": 500
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp."
+        }
+      },
+      "required": [
+        "userId",
+        "sourceText",
+        "translatedText",
+        "sourceLang",
+        "targetLang",
+        "dataSource",
+        "status",
+        "lessonId",
+        "errorMessage",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Lesson": {
+      "title": "Lesson",
+      "description": "Structured AI-generated language lesson organized by topic.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Owner user UID.",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "title": {
+          "type": "string",
+          "description": "Vietnamese title of the lesson.",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "topic": {
+          "type": "string",
+          "description": "Topic category in Vietnamese.",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "summary": {
+          "type": "string",
+          "description": "Beginner-friendly Vietnamese overview.",
+          "maxLength": 1500
+        },
+        "sourceText": {
+          "type": "string",
+          "description": "Original source text preserved verbatim.",
+          "minLength": 1,
+          "maxLength": 8000
+        },
+        "translatedText": {
+          "type": "string",
+          "description": "Original translated text preserved verbatim.",
+          "minLength": 1,
+          "maxLength": 8000
+        },
+        "sourceLang": {
+          "type": "string",
+          "description": "Original source language.",
+          "enum": ["vi", "en", "zh"],
+          "maxLength": 10
+        },
+        "targetLang": {
+          "type": "string",
+          "description": "Original target language.",
+          "enum": ["vi", "en", "zh"],
+          "maxLength": 10
+        },
+        "learningLang": {
+          "type": "string",
+          "description": "Foreign language being studied in this lesson.",
+          "enum": ["en", "zh"],
+          "maxLength": 10
+        },
+        "vocabIds": {
+          "type": "array",
+          "description": "Bounded list of Flashcard IDs linked to this lesson (max 60)."
+        },
+        "sentences": {
+          "type": "array",
+          "description": "Bounded list of sentence example and shadowing objects (max 40)."
+        },
+        "grammarPoints": {
+          "type": "array",
+          "description": "Bounded list of grammar structure explanations in Vietnamese (max 20)."
+        },
+        "exercises": {
+          "type": "array",
+          "description": "Bounded list of interactive practice questions (max 20)."
+        },
+        "entryCount": {
+          "type": "number",
+          "description": "Number of translation entries consolidated into this lesson."
+        },
+        "masteryPercent": {
+          "type": "number",
+          "description": "Lesson completion percentage from 0 to 100."
+        },
+        "completedExercises": {
+          "type": "number",
+          "description": "Number of exercises answered accurately."
+        },
+        "shadowingCount": {
+          "type": "number",
+          "description": "Number of shadowing practice sessions completed."
+        },
+        "isCompleted": {
+          "type": "boolean",
+          "description": "Whether the user completed the lesson."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp."
+        }
+      },
+      "required": [
+        "userId",
+        "title",
+        "topic",
+        "summary",
+        "sourceText",
+        "translatedText",
+        "sourceLang",
+        "targetLang",
+        "learningLang",
+        "vocabIds",
+        "sentences",
+        "grammarPoints",
+        "exercises",
+        "entryCount",
+        "masteryPercent",
+        "completedExercises",
+        "shadowingCount",
+        "isCompleted",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Vocabulary": {
+      "title": "Vocabulary",
+      "description": "Canonical lexical index entry tracking known lemmas and homonym senses.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Owner user UID.",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "canonicalKey": {
+          "type": "string",
+          "description": "Composite key: lang + normalized lemma + homonym/reading sense.",
+          "minLength": 3,
+          "maxLength": 200
+        },
+        "learningLang": {
+          "type": "string",
+          "description": "Language of the vocabulary item.",
+          "enum": ["en", "zh"],
+          "maxLength": 10
+        },
+        "word": {
+          "type": "string",
+          "description": "Headword in English or Simplified Chinese.",
+          "minLength": 1,
+          "maxLength": 150
+        },
+        "lemma": {
+          "type": "string",
+          "description": "Normalized dictionary base form.",
+          "minLength": 1,
+          "maxLength": 150
+        },
+        "traditional": {
+          "type": "string",
+          "description": "Traditional Chinese characters if applicable.",
+          "maxLength": 150
+        },
+        "homonymSenseKey": {
+          "type": "string",
+          "description": "Semantic/reading disambiguator for homonyms.",
+          "maxLength": 100
+        },
+        "pronunciation": {
+          "type": "string",
+          "description": "IPA or tone-marked Pinyin.",
+          "maxLength": 200
+        },
+        "partOfSpeech": {
+          "type": "string",
+          "description": "Lexical category.",
+          "maxLength": 80
+        },
+        "meanings": {
+          "type": "array",
+          "description": "Bounded list of Vietnamese meanings (max 15)."
+        },
+        "lessonIds": {
+          "type": "array",
+          "description": "Bounded list of Lesson IDs containing this word (max 50)."
+        },
+        "encounterCount": {
+          "type": "number",
+          "description": "Number of times encountered across imported translations."
+        },
+        "flashcardId": {
+          "type": "string",
+          "description": "Associated deduplicated Flashcard document ID.",
+          "maxLength": 128
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp."
+        }
+      },
+      "required": [
+        "userId",
+        "canonicalKey",
+        "learningLang",
+        "word",
+        "lemma",
+        "traditional",
+        "homonymSenseKey",
+        "pronunciation",
+        "partOfSpeech",
+        "meanings",
+        "lessonIds",
+        "encounterCount",
+        "flashcardId",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Flashcard": {
+      "title": "Flashcard",
+      "description": "Deduplicated vocabulary flashcard supporting polysemy, homonym distinction, and EN/ZH linguistic fields.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Owner user UID.",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "canonicalKey": {
+          "type": "string",
+          "description": "Unique canonical key combining language, lemma, and homonym/reading disambiguator.",
+          "minLength": 3,
+          "maxLength": 200
+        },
+        "learningLang": {
+          "type": "string",
+          "description": "Target foreign language.",
+          "enum": ["en", "zh"],
+          "maxLength": 10
+        },
+        "word": {
+          "type": "string",
+          "description": "English headword or Simplified Hanzi.",
+          "minLength": 1,
+          "maxLength": 150
+        },
+        "lemma": {
+          "type": "string",
+          "description": "Dictionary base form.",
+          "minLength": 1,
+          "maxLength": 150
+        },
+        "traditional": {
+          "type": "string",
+          "description": "Traditional Hanzi characters.",
+          "maxLength": 150
+        },
+        "homonymNote": {
+          "type": "string",
+          "description": "Vietnamese note distinguishing homonyms or script variants.",
+          "maxLength": 250
+        },
+        "ipa": {
+          "type": "string",
+          "description": "English IPA transcription.",
+          "maxLength": 150
+        },
+        "pinyin": {
+          "type": "string",
+          "description": "Chinese Pinyin with tone marks.",
+          "maxLength": 200
+        },
+        "partOfSpeech": {
+          "type": "string",
+          "description": "Part of speech label.",
+          "maxLength": 80
+        },
+        "meanings": {
+          "type": "array",
+          "description": "Bounded list of Vietnamese meanings consolidated on this single card (max 15)."
+        },
+        "examples": {
+          "type": "array",
+          "description": "Bounded list of contextual example objects (max 20)."
+        },
+        "relatedForms": {
+          "type": "array",
+          "description": "Bounded list of related word forms or Chinese compounds (max 15)."
+        },
+        "contexts": {
+          "type": "array",
+          "description": "Bounded list of encountered topic contexts (max 20)."
+        },
+        "isFavorite": {
+          "type": "boolean",
+          "description": "Whether bookmarked as favorite."
+        },
+        "encounterCount": {
+          "type": "number",
+          "description": "Total encounters across user translations."
+        },
+        "lessonIds": {
+          "type": "array",
+          "description": "Bounded list of related lesson IDs (max 50)."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp."
+        }
+      },
+      "required": [
+        "userId",
+        "canonicalKey",
+        "learningLang",
+        "word",
+        "lemma",
+        "traditional",
+        "homonymNote",
+        "ipa",
+        "pinyin",
+        "partOfSpeech",
+        "meanings",
+        "examples",
+        "relatedForms",
+        "contexts",
+        "isFavorite",
+        "encounterCount",
+        "lessonIds",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ReviewProgress": {
+      "title": "ReviewProgress",
+      "description": "Spaced repetition (SM-2) review state and schedule for a single Flashcard.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Owner user UID.",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "flashcardId": {
+          "type": "string",
+          "description": "Target Flashcard document ID.",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "learningLang": {
+          "type": "string",
+          "description": "Language of the card.",
+          "enum": ["en", "zh"],
+          "maxLength": 10
+        },
+        "reviewState": {
+          "type": "string",
+          "description": "Spaced repetition state: unlearned, learning, remembered, needs_review.",
+          "enum": ["unlearned", "learning", "remembered", "needs_review"],
+          "maxLength": 20
+        },
+        "lastRating": {
+          "type": "string",
+          "description": "Last self-evaluation rating: none, forgot, hard, good, easy.",
+          "enum": ["none", "forgot", "hard", "good", "easy"],
+          "maxLength": 20
+        },
+        "intervalDays": {
+          "type": "number",
+          "description": "Current SRS interval in days."
+        },
+        "easeFactor": {
+          "type": "number",
+          "description": "SM-2 ease factor (1.3 to 4.0)."
+        },
+        "repetitions": {
+          "type": "number",
+          "description": "Consecutive successful reviews."
+        },
+        "lapses": {
+          "type": "number",
+          "description": "Number of times forgotten."
+        },
+        "nextReviewAtMs": {
+          "type": "number",
+          "description": "Next scheduled review epoch timestamp in milliseconds."
+        },
+        "lastReviewedAtMs": {
+          "type": "number",
+          "description": "Most recent review epoch timestamp in milliseconds."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp."
+        }
+      },
+      "required": [
+        "userId",
+        "flashcardId",
+        "learningLang",
+        "reviewState",
+        "lastRating",
+        "intervalDays",
+        "easeFactor",
+        "repetitions",
+        "lapses",
+        "nextReviewAtMs",
+        "lastReviewedAtMs",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Per-user learning settings and study streak metadata."
+    },
+    "/translationEntries/{entryId}": {
+      "schema": { "$ref": "#/entities/TranslationEntry" },
+      "description": "Imported translation records owned by each user."
+    },
+    "/lessons/{lessonId}": {
+      "schema": { "$ref": "#/entities/Lesson" },
+      "description": "AI-generated structured lessons owned by each user."
+    },
+    "/vocabulary/{vocabId}": {
+      "schema": { "$ref": "#/entities/Vocabulary" },
+      "description": "Canonical vocabulary index entries owned by each user."
+    },
+    "/flashcards/{flashcardId}": {
+      "schema": { "$ref": "#/entities/Flashcard" },
+      "description": "Deduplicated flashcards owned by each user."
+    },
+    "/reviewProgress/{progressId}": {
+      "schema": { "$ref": "#/entities/ReviewProgress" },
+      "description": "Spaced repetition review schedule documents owned by each user."
+    }
+  }
+}

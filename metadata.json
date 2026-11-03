@@ -1,0 +1,6 @@
+{
+  "name": "Smart Translation Learning",
+  "description": "Biến nội dung đã dịch trên Google Dịch thành bài học tiếng Anh và tiếng Trung có hệ thống với AI, flashcard không trùng lặp, luyện nói Shadowing và ôn tập thông minh.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
