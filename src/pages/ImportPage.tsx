@@ -62,6 +62,36 @@ const QUICK_SAMPLES: SamplePreset[] = [
     translatedText:
       '您好，我预订了三晚的双人间。请问从酒店坐地铁去中心银行需要多长时间？',
   },
+  {
+    id: 'zh_daily_1',
+    label: 'Mẫu Trung – Việt: Gọi món ở nhà hàng',
+    sourceLang: 'vi',
+    targetLang: 'zh',
+    sourceText:
+      'Cho tôi một bát mì bò, ít cay thôi. Ngoài ra, cho tôi thêm một cốc trà nóng. Có thể thanh toán bằng thẻ không?',
+    translatedText:
+      '请给我一碗牛肉面，少放一点辣椒。另外，请再给我一杯热茶。可以刷卡付款吗？',
+  },
+  {
+    id: 'zh_work_1',
+    label: 'Mẫu Trung – Việt: Trao đổi công việc',
+    sourceLang: 'zh',
+    targetLang: 'vi',
+    sourceText:
+      '我们已经收到您发来的文件。请您再确认一下交付日期，如果有任何问题，请及时告诉我们。',
+    translatedText:
+      'Chúng tôi đã nhận được tài liệu bạn gửi. Vui lòng xác nhận lại ngày bàn giao; nếu có bất kỳ vấn đề nào, hãy thông báo cho chúng tôi kịp thời.',
+  },
+  {
+    id: 'en_daily_1',
+    label: 'Mẫu Anh – Việt: Giao tiếp hằng ngày',
+    sourceLang: 'en',
+    targetLang: 'vi',
+    sourceText:
+      'I am trying to build a better routine. I usually review new words in the morning and listen to a short podcast on my way to work.',
+    translatedText:
+      'Tôi đang cố gắng xây dựng một thói quen tốt hơn. Tôi thường ôn từ mới vào buổi sáng và nghe một podcast ngắn trên đường đi làm.',
+  },
 ];
 
 function detectLocalLang(text: string): LanguageCode | null {
@@ -344,24 +374,45 @@ export function ImportPage() {
         </section>
       )}
 
-      {/* Quick Sample Presets for Testing Multi-sentence & Non-duplicate Merging */}
-      <div className="space-y-2">
-        <p className="text-xs font-medium text-slate-500">
-          Dùng thử nhanh với dữ liệu mẫu nhiều câu:
-        </p>
-        <div className="flex flex-wrap gap-2">
+      {/* Curated bilingual practice samples */}
+      <section className="rounded-xl border border-sky-100 bg-gradient-to-br from-sky-50/80 to-white p-4 sm:p-5 space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+          <div className="space-y-1">
+            <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-sky-800">
+              <Sparkles className="w-3.5 h-3.5" />
+              Bắt đầu nhanh
+            </div>
+            <h2 className="text-sm font-semibold text-slate-900">
+              Chọn một tình huống để tạo bài học mẫu
+            </h2>
+            <p className="text-xs text-slate-500">
+              Có mẫu tiếng Anh và tiếng Trung; nội dung sẽ được đưa vào quy trình phân tích bài học hiện tại.
+            </p>
+          </div>
+          <span className="self-start sm:self-auto rounded-full bg-white border border-sky-100 px-2.5 py-1 text-xs font-medium text-sky-800">
+            {QUICK_SAMPLES.length} tình huống
+          </span>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
           {QUICK_SAMPLES.map((sample) => (
             <button
               key={sample.id}
               type="button"
               onClick={() => handleApplySample(sample)}
-              className="px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-200 hover:border-sky-300 hover:text-sky-800 rounded-lg transition-colors whitespace-nowrap"
+              className="group w-full min-w-0 text-left rounded-lg border border-slate-200 bg-white p-3 hover:border-sky-300 hover:shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-sky-500"
             >
-              {sample.label}
+              <span className="block text-xs font-semibold text-slate-800 group-hover:text-sky-800 leading-relaxed">
+                {sample.label}
+              </span>
+              <span className="mt-1.5 flex items-center gap-1.5 text-[11px] text-slate-500">
+                {LANG_OPTIONS.find((lang) => lang.value === sample.sourceLang)?.label}
+                <ArrowLeftRight className="w-3 h-3 shrink-0" />
+                {LANG_OPTIONS.find((lang) => lang.value === sample.targetLang)?.label}
+              </span>
             </button>
           ))}
         </div>
-      </div>
+      </section>
 
       {/* Main Translation Input Form */}
       <form onSubmit={handleCreateLesson} className="bg-white border border-slate-200 rounded-xl p-6 space-y-6">

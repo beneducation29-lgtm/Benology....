@@ -3,11 +3,14 @@ import {
   ArrowRight,
   BookOpen,
   CheckCircle2,
+  Clock3,
   Flame,
+  Headphones,
   Layers,
   Mic,
   PlusCircle,
   Repeat,
+  Target,
 } from 'lucide-react';
 import { useLearning } from '../context/LearningContext';
 import { getEffectiveReviewState, isDueToday } from '../lib/dedupAndSrs';
@@ -346,6 +349,116 @@ export function DashboardPage() {
             </div>
           )}
         </div>
+      </section>
+
+      {/* Guided 15-minute learning path */}
+      <section className="rounded-2xl border border-sky-100 bg-gradient-to-br from-sky-50 via-white to-indigo-50 p-5 sm:p-6 space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+          <div className="space-y-1">
+            <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-sky-800">
+              <Target className="w-4 h-4" />
+              Lộ trình học mỗi ngày
+            </div>
+            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 font-display">
+              15 phút hôm nay, tiến bộ từng chút
+            </h2>
+            <p className="text-sm text-slate-600 max-w-2xl">
+              Học theo vòng lặp: nhớ lại → hiểu cách dùng → nghe và nói → tự kiểm tra.
+              Bạn có thể hoàn thành từng bước theo tốc độ của mình.
+            </p>
+          </div>
+          <span className="inline-flex items-center gap-1.5 self-start sm:self-auto rounded-full bg-white/90 border border-sky-100 px-3 py-1.5 text-xs font-semibold text-sky-800 whitespace-nowrap">
+            <Clock3 className="w-3.5 h-3.5" />
+            4 chặng · 15 phút
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+          <button
+            type="button"
+            onClick={() => setActiveTab(stats.dueTodayCount > 0 ? 'review' : 'flashcards')}
+            className="group text-left rounded-xl border border-white bg-white/90 hover:bg-white hover:border-sky-200 p-4 transition-all focus:outline-none focus:ring-2 focus:ring-sky-500"
+          >
+            <div className="flex items-center justify-between mb-3">
+              <span className="flex items-center justify-center w-9 h-9 rounded-lg bg-amber-50 text-amber-700">
+                <Repeat className="w-4 h-4" />
+              </span>
+              <span className="text-xs font-mono text-slate-500">03 phút</span>
+            </div>
+            <p className="text-sm font-semibold text-slate-900">1. Gọi lại trí nhớ</p>
+            <p className="text-xs text-slate-500 leading-relaxed mt-1">
+              {stats.dueTodayCount > 0
+                ? `Ôn ${stats.dueTodayCount} thẻ đang đến hạn trước khi học mới.`
+                : 'Lật lại vài thẻ cũ và thử nhớ nghĩa trước khi xem đáp án.'}
+            </p>
+            <span className="inline-flex items-center gap-1 mt-3 text-xs font-semibold text-sky-700 group-hover:gap-2 transition-all">
+              {stats.dueTodayCount > 0 ? 'Bắt đầu ôn tập' : 'Mở flashcard'} <ArrowRight className="w-3 h-3" />
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('flashcards')}
+            className="group text-left rounded-xl border border-white bg-white/90 hover:bg-white hover:border-sky-200 p-4 transition-all focus:outline-none focus:ring-2 focus:ring-sky-500"
+          >
+            <div className="flex items-center justify-between mb-3">
+              <span className="flex items-center justify-center w-9 h-9 rounded-lg bg-violet-50 text-violet-700">
+                <Layers className="w-4 h-4" />
+              </span>
+              <span className="text-xs font-mono text-slate-500">04 phút</span>
+            </div>
+            <p className="text-sm font-semibold text-slate-900">2. Học từ trong ngữ cảnh</p>
+            <p className="text-xs text-slate-500 leading-relaxed mt-1">
+              Chọn 3–5 từ, đọc ví dụ và tự đặt một câu mới thay vì chỉ học thuộc nghĩa.
+            </p>
+            <span className="inline-flex items-center gap-1 mt-3 text-xs font-semibold text-sky-700 group-hover:gap-2 transition-all">
+              Mở kho từ vựng <ArrowRight className="w-3 h-3" />
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => lessons[0] ? openShadowingForLesson(lessons[0].id) : setActiveTab('import')}
+            className="group text-left rounded-xl border border-white bg-white/90 hover:bg-white hover:border-sky-200 p-4 transition-all focus:outline-none focus:ring-2 focus:ring-sky-500"
+          >
+            <div className="flex items-center justify-between mb-3">
+              <span className="flex items-center justify-center w-9 h-9 rounded-lg bg-emerald-50 text-emerald-700">
+                <Headphones className="w-4 h-4" />
+              </span>
+              <span className="text-xs font-mono text-slate-500">04 phút</span>
+            </div>
+            <p className="text-sm font-semibold text-slate-900">3. Nghe và nhại lại</p>
+            <p className="text-xs text-slate-500 leading-relaxed mt-1">
+              Nghe một câu, chú ý nhịp và phát âm, sau đó tự thu âm để luyện phản xạ.
+            </p>
+            <span className="inline-flex items-center gap-1 mt-3 text-xs font-semibold text-sky-700 group-hover:gap-2 transition-all">
+              {lessons.length > 0 ? 'Luyện Shadowing' : 'Tạo bài học để luyện'} <ArrowRight className="w-3 h-3" />
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => lessons[0] ? openLessonDetail(lessons[0].id) : setActiveTab('import')}
+            className="group text-left rounded-xl border border-white bg-white/90 hover:bg-white hover:border-sky-200 p-4 transition-all focus:outline-none focus:ring-2 focus:ring-sky-500"
+          >
+            <div className="flex items-center justify-between mb-3">
+              <span className="flex items-center justify-center w-9 h-9 rounded-lg bg-rose-50 text-rose-700">
+                <BookOpen className="w-4 h-4" />
+              </span>
+              <span className="text-xs font-mono text-slate-500">04 phút</span>
+            </div>
+            <p className="text-sm font-semibold text-slate-900">4. Kiểm tra cách dùng</p>
+            <p className="text-xs text-slate-500 leading-relaxed mt-1">
+              Làm câu hỏi trong bài học và đọc giải thích tiếng Việt để sửa lỗi ngay.
+            </p>
+            <span className="inline-flex items-center gap-1 mt-3 text-xs font-semibold text-sky-700 group-hover:gap-2 transition-all">
+              {lessons.length > 0 ? 'Mở bài học' : 'Nhập bản dịch đầu tiên'} <ArrowRight className="w-3 h-3" />
+            </span>
+          </button>
+        </div>
+        <p className="text-xs text-slate-500">
+          Gợi ý: nếu hôm nay chỉ có 5 phút, hãy ưu tiên ôn các thẻ đến hạn. Duy trì đều đặn quan trọng hơn học thật nhiều trong một lần.
+        </p>
       </section>
     </div>
   );
